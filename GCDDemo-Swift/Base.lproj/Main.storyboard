@@ -95,9 +95,21 @@
                                     <action selector="tapButton7:" destination="BYZ-38-t0r" eventType="touchUpInside" id="XYk-vP-Ap4"/>
                                 </connections>
                             </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="b6O-eX-Wdu">
+                                <rect key="frame" x="20" y="357" width="90" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="30" id="Jga-D4-C21"/>
+                                    <constraint firstAttribute="width" constant="90" id="NVy-vq-y4U"/>
+                                </constraints>
+                                <state key="normal" title="队列组的使用"/>
+                                <connections>
+                                    <action selector="tapButton8:" destination="BYZ-38-t0r" eventType="touchUpInside" id="nnj-Yb-vGz"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                         <constraints>
+                            <constraint firstItem="b6O-eX-Wdu" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="1Bl-8v-TIO"/>
                             <constraint firstItem="eX7-16-m4p" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="277-ho-GQt"/>
                             <constraint firstItem="DVa-Mq-SBC" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" constant="19" id="6Lz-i0-pEW"/>
                             <constraint firstItem="6tS-a2-Kea" firstAttribute="top" secondItem="Pzb-Na-pw4" secondAttribute="bottom" constant="13" id="968-7P-WK8"/>
@@ -107,6 +119,7 @@
                             <constraint firstItem="DVa-Mq-SBC" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="KP5-AT-TO0"/>
                             <constraint firstItem="6tS-a2-Kea" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="LeY-BG-IDg"/>
                             <constraint firstItem="YhO-Rb-he0" firstAttribute="top" secondItem="w5g-9I-LM2" secondAttribute="bottom" constant="15" id="VcB-Pr-uex"/>
+                            <constraint firstItem="b6O-eX-Wdu" firstAttribute="top" secondItem="eX7-16-m4p" secondAttribute="bottom" constant="17" id="fXu-O2-yUT"/>
                             <constraint firstItem="YhO-Rb-he0" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="gK6-o5-r9a"/>
                             <constraint firstItem="hN7-at-fnN" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="lSQ-od-MMH"/>
                             <constraint firstItem="hN7-at-fnN" firstAttribute="top" secondItem="YhO-Rb-he0" secondAttribute="bottom" constant="19" id="lUd-Zk-255"/>

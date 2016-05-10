@@ -125,6 +125,11 @@ func performQueuesUseAsynchronization(queue: dispatch_queue_t) -> Void {
 }
 
 
+/**
+ 延迟执行
+ 
+ - parameter time: 延迟执行的时间
+ */
 func deferPerform(time: Double) -> Void {
     
     //dispatch_time用于计算相对时间,当设备睡眠时，dispatch_time也就跟着睡眠了
@@ -140,5 +145,67 @@ func deferPerform(time: Double) -> Void {
     dispatch_after(delayWalltime, getGlobalQueue()) {
         print("dispatch_walltime: 延迟\(time)秒执行")
     }
+}
 
+/**
+ 全局队列的优先级关系
+ */
+func globalQueuePriority() {
+    //高 > 默认 > 低 > 后台
+    let queueHeight: dispatch_queue_t = getGlobalQueue(DISPATCH_QUEUE_PRIORITY_HIGH)
+    let queueDefault: dispatch_queue_t = getGlobalQueue(DISPATCH_QUEUE_PRIORITY_DEFAULT)
+    let queueLow: dispatch_queue_t = getGlobalQueue(DISPATCH_QUEUE_PRIORITY_LOW)
+    let queueBackground: dispatch_queue_t = getGlobalQueue(DISPATCH_QUEUE_PRIORITY_BACKGROUND)
+    print(queueHeight)
+    print(queueDefault)
+    print(queueLow)
+    print(queueBackground)
+    
+    //优先级不是绝对的，大体上会按这个优先级来执行。 一般都是使用默认（default）优先级
+    dispatch_async(queueLow) {
+        print("低：\(getCurrentThread())")
+    }
+    
+    dispatch_async(queueBackground) {
+        print("后台：\(getCurrentThread())")
+    }
+    
+    dispatch_async(queueDefault) {
+        print("默认：\(getCurrentThread())")
+    }
+    
+    dispatch_async(queueHeight) {
+        print("高：\(getCurrentThread())")
+    }
+}
+
+/**
+ 给串行队列或者并行队列设置优先级
+ */
+func setCustomeQueuePriority() {
+    //优先级的执行顺序也不是绝对的
+    
+    //给serialQueueHigh设定DISPATCH_QUEUE_PRIORITY_HIGH优先级
+    let serialQueueHigh = getSerialQueue("cn.zeluli.serial1")
+    dispatch_set_target_queue(serialQueueHigh, getGlobalQueue(DISPATCH_QUEUE_PRIORITY_HIGH))
+    
+    let serialQueueLow = getSerialQueue("cn.zeluli.serial1")
+    dispatch_set_target_queue(serialQueueLow, getGlobalQueue(DISPATCH_QUEUE_PRIORITY_LOW))
+    
+    
+    dispatch_async(serialQueueLow) {
+        print("低：\(getCurrentThread())")
+    }
+    
+    dispatch_async(serialQueueHigh) {
+        print("高：\(getCurrentThread())")
+    }
+}
+
+/**
+ 一组队列执行完毕后在执行默写东西，可以使用dispatch_group来执行队列
+ */
+func performGroupQueue() {
+    let serialQueue: dispatch_queue_t = getSerialQueue("cn.zeluli")
+    
 }
