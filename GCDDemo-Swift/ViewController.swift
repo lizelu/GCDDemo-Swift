@@ -35,22 +35,80 @@ class ViewController: UIViewController {
         performQueuesUseAsynchronization(getConcurrentQueue("asyn.concurrent.queue"))
     }
     
+    /**
+     延迟执行
+     
+     - parameter sender: 
+     */
     @IBAction func tapButton5(sender: AnyObject) {
         deferPerform(3)
     }
     
+    /**
+     设置全局队列的优先级
+     
+     - parameter sender:
+     */
     @IBAction func tapButton6(sender: AnyObject) {
         globalQueuePriority()
     }
     
-    
+    /**
+     设置自建队列优先级
+     
+     - parameter sender:
+     */
     @IBAction func tapButton7(sender: AnyObject) {
         setCustomeQueuePriority()
     }
     
-
+    /**
+     使用dispatch组进行队列同步
+     
+     - parameter sender:
+     */
     @IBAction func tapButton8(sender: AnyObject) {
-        
+        performGroupQueue()
+    }
+    
+    
+    /**
+     使用任务栅栏
+     
+     - parameter sender:
+     */
+    @IBAction func tapButton9(sender: AnyObject) {
+        useBarrierAsync()
+    }
+    
+    @IBAction func tapButton10(sender: AnyObject) {
+        useDispatchApply()
+    }
+    
+    @IBAction func tapButton11(sender: AnyObject) {
+        queueSuspendAndResume()
+    }
+    
+    /**
+     信号量同步锁
+     
+     - parameter sender:
+     */
+    @IBAction func tapButton12(sender: AnyObject) {
+        useSemaphoreLock()
+    }
+    
+    @IBAction func tapButton13(sender: AnyObject) {
+        useDispatchSourceAdd()
+    }
+    
+    @IBAction func tapButton14(sender: AnyObject) {
+        useDispatchSourceOr()
+    }
+    
+    
+    @IBAction func tapButton15(sender: AnyObject) {
+        useDispatchSourceTimer()
     }
     
     override func didReceiveMemoryWarning() {

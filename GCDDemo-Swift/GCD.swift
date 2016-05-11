@@ -25,6 +25,9 @@ func getCurrentThread() -> NSThread {
  */
 func currentThreadSleep(timer: NSTimeInterval) -> Void {
     NSThread.sleepForTimeInterval(timer)
+    
+    //或者使用
+    //sleep(UInt32(timer))
 }
 
 
@@ -203,9 +206,202 @@ func setCustomeQueuePriority() {
 }
 
 /**
- 一组队列执行完毕后在执行默写东西，可以使用dispatch_group来执行队列
+ 一组队列执行完毕后在执行需要执行的东西，可以使用dispatch_group来执行队列
  */
 func performGroupQueue() {
-    let serialQueue: dispatch_queue_t = getSerialQueue("cn.zeluli")
     
+    let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
+    let group: dispatch_group_t = dispatch_group_create()
+    
+    //将group与queue进行管理，并且自动执行
+    for i in 1...5 {
+        dispatch_group_async(group, concurrentQueue) {
+            currentThreadSleep(Double(i))
+            print("步骤\(i)异步执行完毕")
+        }
+    }
+    
+    //队列组的都执行完毕后会进行通知
+    dispatch_group_notify(group, getMainQueue()) {
+        print("\n队列组中的任务全部执行完毕, 开始测试手动管理Group")
+        performGroupUseEnterAndleave()
+        print("手动管理的队列组全部执行完毕")
+    }
+    
+    print("异步执行测试")
 }
+
+/**
+ * 使用enter与leave手动管理group与queue
+ */
+func performGroupUseEnterAndleave() {
+    
+    let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
+    let group: dispatch_group_t = dispatch_group_create()
+    
+    //将group与queue进行手动关联和管理，并且自动执行
+    for i in 1...3 {
+        dispatch_group_enter(group)                     //进入队列组
+        dispatch_async(concurrentQueue, { 
+            currentThreadSleep(Double(i))
+            print("手动管理组队列中的任务\(i)异步执行完毕")
+            dispatch_group_leave(group)                 //离开队列组
+        })
+    }
+    
+    print("被阻塞的线程\(getCurrentThread())")
+    dispatch_group_wait(group, DISPATCH_TIME_FOREVER)   //阻塞当前线程，直到所有任务执行完毕
+    
+    dispatch_group_notify(group, concurrentQueue) { 
+        print("通知手动管理的队列执行OK")
+    }
+}
+
+/**
+ 使用给队列加栅栏
+ */
+func useBarrierAsync() {
+    let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
+    
+    dispatch_async(concurrentQueue) { 
+        currentThreadSleep(2)
+        print("任务一")
+    }
+    
+    dispatch_barrier_async(concurrentQueue) {
+        print("任务一执行完毕后才会执行任务二")
+    }
+    
+    dispatch_async(concurrentQueue) { 
+       currentThreadSleep(1)
+        print("任务二")
+    }
+}
+
+/**
+ 循环执行
+ */
+func useDispatchApply() {
+    let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
+    
+    //会阻塞当前线程, 但concurrentQueue队列会在新的线程中执行
+    dispatch_apply(5, concurrentQueue) { (index) in
+        
+        currentThreadSleep(Double(index))
+        print("第\(index)次执行，\n\(getCurrentThread())\n")
+    }
+}
+
+//暂停和重启队列
+func queueSuspendAndResume() {
+    let concurrentQueue = getConcurrentQueue("cn.zeluli")
+    
+    dispatch_suspend(concurrentQueue)   //将队列进行挂起
+    dispatch_async(concurrentQueue) { 
+        print("任务执行")
+    }
+    
+    currentThreadSleep(2)
+    dispatch_resume(concurrentQueue)    //将挂起的队列进行唤醒
+}
+
+//信号量同步锁
+func useSemaphoreLock() {
+    
+    let concurrentQueue = getConcurrentQueue("cn.zeluli")
+    
+    //创建信号量
+    let semaphoreLock:dispatch_semaphore_t = dispatch_semaphore_create(1)
+    
+    dispatch_apply(30, concurrentQueue) { (index) in
+        
+        dispatch_semaphore_wait(semaphoreLock, DISPATCH_TIME_FOREVER) //上锁
+        
+        print("第\(index)次执行")
+        print("第\(index)次执行")
+        print("第\(index)次执行")
+        print("第\(index)次执行\n")
+        
+        dispatch_semaphore_signal(semaphoreLock)                      //开锁
+    }
+}
+
+func useDispatchSourceAdd() {
+    
+    let queue = getGlobalQueue()
+    
+    //创建source
+    let dispatchSource:dispatch_source_t = dispatch_source_create(DISPATCH_SOURCE_TYPE_DATA_ADD, 0, 0, queue)
+    
+    dispatch_source_set_event_handler(dispatchSource) { 
+        print("source中所有的数相加的和等于\(dispatch_source_get_data(dispatchSource))")
+    }
+    
+    dispatch_resume(dispatchSource)
+    
+    dispatch_async(queue) {
+        var sum = 0
+        for i in 1...100 {
+            dispatch_source_merge_data(dispatchSource, UInt(i))
+            //currentThreadSleep(1)
+            sum += i
+        }
+        print("sum = \(sum)")
+        
+    }
+}
+
+func useDispatchSourceOr() {
+    
+    let queue = getGlobalQueue()
+    
+    //创建source
+    let dispatchSource:dispatch_source_t = dispatch_source_create(DISPATCH_SOURCE_TYPE_DATA_OR, 0, 0, queue)
+    
+    dispatch_source_set_event_handler(dispatchSource) {
+        print(getCurrentThread())
+        print("source中所有的数进行或操作等于：\(dispatch_source_get_data(dispatchSource))")
+    }
+    
+    dispatch_resume(dispatchSource)
+    
+    dispatch_async(queue) {
+        var or = 0
+        for i in 1...100 {
+            dispatch_source_merge_data(dispatchSource, UInt(i))
+            //currentThreadSleep(0.1)
+            or |= i
+        }
+        print("or = \(or)")
+    }
+}
+
+func useDispatchSourceTimer() {
+    let queue: dispatch_queue_t = getGlobalQueue()
+    let source: dispatch_source_t = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, queue)
+   
+    //设置间隔时间，从当前时间开始，延迟3秒后每个一秒处理一次事件
+    dispatch_source_set_timer(source, DISPATCH_TIME_NOW, UInt64(1 * NSEC_PER_SEC), UInt64(3 * NSEC_PER_SEC))
+    
+    var timeout = 10    //倒计时时间
+    
+    //设置要处理的事件, 在我们上面创建的queue队列中进行执行
+    dispatch_source_set_event_handler(source) {
+        print(getCurrentThread())
+        if(timeout <= 0) {
+            dispatch_source_cancel(source)
+        } else {
+            print("\(timeout)s")
+            timeout -= 1
+        }
+    }
+    
+    //倒计时结束的事件
+    dispatch_source_set_cancel_handler(source) { 
+        print("倒计时结束")
+    }
+    
+    dispatch_resume(source)
+}
+
+
