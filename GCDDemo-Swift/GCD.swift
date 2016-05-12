@@ -107,15 +107,15 @@ func performQueuesUseSynchronization(queue: dispatch_queue_t) -> Void {
  */
 func performQueuesUseAsynchronization(queue: dispatch_queue_t) -> Void {
     
-    //一个串行队列，用于同步锁
-    let lockQueue = getSerialQueue("lock")
+    //一个串行队列，用于同步执行
+    let serialQueue = getSerialQueue("serialQueue")
     
     for i in 0..<3 {
         dispatch_async(queue) {
             currentThreadSleep(Double(arc4random()%3))
             let currentThread = getCurrentThread()
             
-            dispatch_sync(lockQueue, {              //同步锁
+            dispatch_sync(serialQueue, {              //同步锁
                 print("Sleep的线程\(currentThread)")
                 print("当前输出内容的线程\(getCurrentThread())")
                 print("执行\(i):\(queue)\n")
@@ -137,17 +137,19 @@ func deferPerform(time: Double) -> Void {
     
     //dispatch_time用于计算相对时间,当设备睡眠时，dispatch_time也就跟着睡眠了
     let delayTime: dispatch_time_t = dispatch_time(DISPATCH_TIME_NOW, Int64(time * Double(NSEC_PER_SEC)))
-    dispatch_after(delayTime, getGlobalQueue()) { 
-        print("dispatch_time: 延迟\(time)秒执行")
+    dispatch_after(delayTime, getGlobalQueue()) {
+        print("执行线程：\(getCurrentThread())\ndispatch_time: 延迟\(time)秒执行\n")
     }
     
-    //dispatch_walltime用于计算绝对时间,而dispatch_walltime是根据wall clock，即使设备睡眠了，他也不会睡眠。
+    //dispatch_walltime用于计算绝对时间,而dispatch_walltime是根据挂钟来计算的时间，即使设备睡眠了，他也不会睡眠。
     let nowInterval = NSDate().timeIntervalSince1970
     var nowStruct = timespec(tv_sec: Int(nowInterval), tv_nsec: 0)
     let delayWalltime = dispatch_walltime(&nowStruct, Int64(time * Double(NSEC_PER_SEC)))
     dispatch_after(delayWalltime, getGlobalQueue()) {
-        print("dispatch_walltime: 延迟\(time)秒执行")
+        print("执行线程：\(getCurrentThread())\ndispatch_walltime: 延迟\(time)秒执行\n")
     }
+    
+    print(NSEC_PER_SEC) //一秒有多少纳秒
 }
 
 /**
@@ -159,26 +161,23 @@ func globalQueuePriority() {
     let queueDefault: dispatch_queue_t = getGlobalQueue(DISPATCH_QUEUE_PRIORITY_DEFAULT)
     let queueLow: dispatch_queue_t = getGlobalQueue(DISPATCH_QUEUE_PRIORITY_LOW)
     let queueBackground: dispatch_queue_t = getGlobalQueue(DISPATCH_QUEUE_PRIORITY_BACKGROUND)
-    print(queueHeight)
-    print(queueDefault)
-    print(queueLow)
-    print(queueBackground)
+   
     
     //优先级不是绝对的，大体上会按这个优先级来执行。 一般都是使用默认（default）优先级
     dispatch_async(queueLow) {
-        print("低：\(getCurrentThread())")
+        print("Low：\(getCurrentThread())")
     }
     
     dispatch_async(queueBackground) {
-        print("后台：\(getCurrentThread())")
+        print("Background：\(getCurrentThread())")
     }
     
     dispatch_async(queueDefault) {
-        print("默认：\(getCurrentThread())")
+        print("Default：\(getCurrentThread())")
     }
     
     dispatch_async(queueHeight) {
-        print("高：\(getCurrentThread())")
+        print("High：\(getCurrentThread())")
     }
 }
 
@@ -210,52 +209,84 @@ func setCustomeQueuePriority() {
  */
 func performGroupQueue() {
     
+    print("\n任务组自动管理：")
+    
     let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
     let group: dispatch_group_t = dispatch_group_create()
     
     //将group与queue进行管理，并且自动执行
-    for i in 1...5 {
+    for i in 1...3 {
         dispatch_group_async(group, concurrentQueue) {
-            currentThreadSleep(Double(i))
-            print("步骤\(i)异步执行完毕")
+            currentThreadSleep(1)
+            print("任务\(i)执行完毕\n")
         }
     }
     
     //队列组的都执行完毕后会进行通知
-    dispatch_group_notify(group, getMainQueue()) {
-        print("\n队列组中的任务全部执行完毕, 开始测试手动管理Group")
-        performGroupUseEnterAndleave()
-        print("手动管理的队列组全部执行完毕")
+    dispatch_group_notify(group, concurrentQueue) {
+        print("所有的任务组执行完毕！\n")
     }
     
-    print("异步执行测试")
+    print("异步执行测试，不会阻塞当前线程")
 }
 
 /**
  * 使用enter与leave手动管理group与queue
  */
 func performGroupUseEnterAndleave() {
-    
+    print("\n任务组手动管理：")
     let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
     let group: dispatch_group_t = dispatch_group_create()
     
     //将group与queue进行手动关联和管理，并且自动执行
     for i in 1...3 {
         dispatch_group_enter(group)                     //进入队列组
-        dispatch_async(concurrentQueue, { 
-            currentThreadSleep(Double(i))
-            print("手动管理组队列中的任务\(i)异步执行完毕")
+        
+        dispatch_async(concurrentQueue, {
+            currentThreadSleep(1)
+            print("任务\(i)执行完毕\n")
+            
             dispatch_group_leave(group)                 //离开队列组
         })
     }
     
-    print("被阻塞的线程\(getCurrentThread())")
     dispatch_group_wait(group, DISPATCH_TIME_FOREVER)   //阻塞当前线程，直到所有任务执行完毕
+    print("任务组执行完毕")
     
-    dispatch_group_notify(group, concurrentQueue) { 
-        print("通知手动管理的队列执行OK")
+    dispatch_group_notify(group, concurrentQueue) {
+        print("手动管理的队列执行OK")
     }
 }
+
+//信号量同步锁
+func useSemaphoreLock() {
+    
+    let concurrentQueue = getConcurrentQueue("cn.zeluli")
+    
+    //创建信号量
+    let semaphoreLock:dispatch_semaphore_t = dispatch_semaphore_create(1)
+    
+    var testNumber = 0
+    
+    for index in 1...10 {
+        dispatch_async(concurrentQueue, {
+            dispatch_semaphore_wait(semaphoreLock, DISPATCH_TIME_FOREVER) //上锁
+            
+            testNumber += 1
+            currentThreadSleep(Double(1))
+            print(getCurrentThread())
+            print("第\(index)次执行: testNumber = \(testNumber)\n")
+            
+            dispatch_semaphore_signal(semaphoreLock)                      //开锁
+            
+        })
+    }
+    
+    print("异步执行测试")
+    
+}
+
+
 
 /**
  使用给队列加栅栏
@@ -303,27 +334,6 @@ func queueSuspendAndResume() {
     
     currentThreadSleep(2)
     dispatch_resume(concurrentQueue)    //将挂起的队列进行唤醒
-}
-
-//信号量同步锁
-func useSemaphoreLock() {
-    
-    let concurrentQueue = getConcurrentQueue("cn.zeluli")
-    
-    //创建信号量
-    let semaphoreLock:dispatch_semaphore_t = dispatch_semaphore_create(1)
-    
-    dispatch_apply(30, concurrentQueue) { (index) in
-        
-        dispatch_semaphore_wait(semaphoreLock, DISPATCH_TIME_FOREVER) //上锁
-        
-        print("第\(index)次执行")
-        print("第\(index)次执行")
-        print("第\(index)次执行")
-        print("第\(index)次执行\n")
-        
-        dispatch_semaphore_signal(semaphoreLock)                      //开锁
-    }
 }
 
 func useDispatchSourceAdd() {

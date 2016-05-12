@@ -14,12 +14,14 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
     }
+    
     //同步执行串行队列
     @IBAction func tapButton1(sender: AnyObject) {
         print("\n同步执行串行队列")
-        performQueuesUseSynchronization(getSerialQueue("syn.seroal.queue"))
+        performQueuesUseSynchronization(getSerialQueue("syn.serial.queue"))
     }
     
+    //同步执行并行队列
     @IBAction func tapButton2(sender: AnyObject) {
         print("\n同步执行并行队列")
         performQueuesUseSynchronization(getConcurrentQueue("syn.concurrent.queue"))
@@ -27,12 +29,13 @@ class ViewController: UIViewController {
     
     @IBAction func tapButton3(sender: AnyObject) {
         print("\n异步执行串行队列")
-        performQueuesUseAsynchronization(getSerialQueue("asyn.seroal.queue"))
+        performQueuesUseAsynchronization(getSerialQueue("asyn.serial.queue"))
     }
 
     @IBAction func tapButton4(sender: AnyObject) {
         print("\n异步执行并行队列")
         performQueuesUseAsynchronization(getConcurrentQueue("asyn.concurrent.queue"))
+        
     }
     
     /**
@@ -41,7 +44,7 @@ class ViewController: UIViewController {
      - parameter sender: 
      */
     @IBAction func tapButton5(sender: AnyObject) {
-        deferPerform(3)
+        deferPerform(1)
     }
     
     /**
@@ -63,13 +66,31 @@ class ViewController: UIViewController {
     }
     
     /**
-     使用dispatch组进行队列同步
+     自动管理任务组
      
      - parameter sender:
      */
     @IBAction func tapButton8(sender: AnyObject) {
-        performGroupQueue()
+        dispatch_async(getGlobalQueue()) { 
+            performGroupQueue()
+            
+        }
     }
+    
+    //手动管理任务组
+    @IBAction func tapButton08(sender: AnyObject) {
+        performGroupUseEnterAndleave()
+    }
+    
+    /**
+     信号量同步锁
+     
+     - parameter sender:
+     */
+    @IBAction func tapButton12(sender: AnyObject) {
+        useSemaphoreLock()
+    }
+
     
     
     /**
@@ -89,14 +110,6 @@ class ViewController: UIViewController {
         queueSuspendAndResume()
     }
     
-    /**
-     信号量同步锁
-     
-     - parameter sender:
-     */
-    @IBAction func tapButton12(sender: AnyObject) {
-        useSemaphoreLock()
-    }
     
     @IBAction func tapButton13(sender: AnyObject) {
         useDispatchSourceAdd()
