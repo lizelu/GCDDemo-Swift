@@ -208,7 +208,6 @@ func setCustomeQueuePriority() {
  一组队列执行完毕后在执行需要执行的东西，可以使用dispatch_group来执行队列
  */
 func performGroupQueue() {
-    
     print("\n任务组自动管理：")
     
     let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
@@ -223,10 +222,10 @@ func performGroupQueue() {
     }
     
     //队列组的都执行完毕后会进行通知
-    dispatch_group_notify(group, concurrentQueue) {
+    dispatch_group_notify(group, getMainQueue()) {
         print("所有的任务组执行完毕！\n")
     }
-    
+
     print("异步执行测试，不会阻塞当前线程")
 }
 
@@ -264,11 +263,11 @@ func useSemaphoreLock() {
     let concurrentQueue = getConcurrentQueue("cn.zeluli")
     
     //创建信号量
-    let semaphoreLock:dispatch_semaphore_t = dispatch_semaphore_create(1)
+    let semaphoreLock: dispatch_semaphore_t = dispatch_semaphore_create(1)
     
     var testNumber = 0
     
-    for index in 1...10 {
+    for index in 1...3 {
         dispatch_async(concurrentQueue, {
             dispatch_semaphore_wait(semaphoreLock, DISPATCH_TIME_FOREVER) //上锁
             
@@ -282,41 +281,32 @@ func useSemaphoreLock() {
         })
     }
     
-    print("异步执行测试")
-    
+    print("异步执行测试\n")
 }
 
 
 
-/**
- 使用给队列加栅栏
- */
-func useBarrierAsync() {
-    let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
-    
-    dispatch_async(concurrentQueue) { 
-        currentThreadSleep(2)
-        print("任务一")
-    }
-    
-    dispatch_barrier_async(concurrentQueue) {
-        print("任务一执行完毕后才会执行任务二")
-    }
-    
-    dispatch_async(concurrentQueue) { 
-       currentThreadSleep(1)
-        print("任务二")
-    }
-}
 
 /**
  循环执行
  */
 func useDispatchApply() {
-    let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
     
+    print("循环多次执行串行队列")
+    let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
     //会阻塞当前线程, 但concurrentQueue队列会在新的线程中执行
-    dispatch_apply(5, concurrentQueue) { (index) in
+    dispatch_apply(2, concurrentQueue) { (index) in
+        
+        currentThreadSleep(Double(index))
+        print("第\(index)次执行，\n\(getCurrentThread())\n")
+    }
+    
+    
+    
+    print("\n\n循环多次执行串行队列")
+    let serialQueue: dispatch_queue_t = getSerialQueue("cn.zeluli")
+    //会阻塞当前线程, serialQueue队列在当前线程中执行
+    dispatch_apply(2, serialQueue) { (index) in
         
         currentThreadSleep(Double(index))
         print("第\(index)次执行，\n\(getCurrentThread())\n")
@@ -335,6 +325,35 @@ func queueSuspendAndResume() {
     currentThreadSleep(2)
     dispatch_resume(concurrentQueue)    //将挂起的队列进行唤醒
 }
+
+/**
+ 使用给队列加栅栏
+ */
+func useBarrierAsync() {
+    let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
+    
+    for i in 0...3 {
+        dispatch_async(concurrentQueue) {
+            currentThreadSleep(Double(i))
+            print("第一批：\(i)")
+        }
+    }
+    
+    dispatch_barrier_async(concurrentQueue) {
+        print("\n第一批执行完毕后才会执行第二批\n")
+    }
+    
+    for i in 0...3 {
+        dispatch_async(concurrentQueue) {
+            currentThreadSleep(Double(i))
+            print("第二批：\(i)")
+        }
+    }
+    
+    print("异步执行测试\n")
+
+}
+
 
 func useDispatchSourceAdd() {
     
