@@ -353,7 +353,9 @@ func useBarrierAsync() {
     print("异步执行测试\n")
 }
 
-
+/**
+ 以加法运算的方式合并数据
+ */
 func useDispatchSourceAdd() {
     var sum = 0     //手动计数的sum, 来模拟记录merge的数据
     
@@ -378,6 +380,10 @@ func useDispatchSourceAdd() {
     }
 }
 
+
+/**
+ 以或运算的方式合并数据
+ */
 func useDispatchSourceOr() {
     
     var or = 0     //手动计数的sum, 来记录merge的数据
@@ -404,9 +410,13 @@ func useDispatchSourceOr() {
         currentThreadSleep(0.1)
         
     }
+    
     print("\nsum = \(or)")
 }
 
+/**
+ 使用dispatch_source创建定时器
+ */
 func useDispatchSourceTimer() {
     let queue: dispatch_queue_t = getGlobalQueue()
     let source: dispatch_source_t = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, queue)
@@ -426,6 +436,7 @@ func useDispatchSourceTimer() {
             timeout -= 1
         }
     }
+    
     //倒计时结束的事件
     dispatch_source_set_cancel_handler(source) { 
         print("倒计时结束")
