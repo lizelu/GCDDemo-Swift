@@ -331,56 +331,56 @@ func queueSuspendAndResume() {
  */
 func useBarrierAsync() {
     let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
-    
     for i in 0...3 {
         dispatch_async(concurrentQueue) {
             currentThreadSleep(Double(i))
-            print("第一批：\(i)")
+            print("第一批：\(i)\(getCurrentThread())")
         }
     }
     
     dispatch_barrier_async(concurrentQueue) {
-        print("\n第一批执行完毕后才会执行第二批\n")
+
+        print("\n第一批执行完毕后才会执行第二批\n\(getCurrentThread())\n")
     }
     
     for i in 0...3 {
         dispatch_async(concurrentQueue) {
             currentThreadSleep(Double(i))
-            print("第二批：\(i)")
+            print("第二批：\(i)\(getCurrentThread())")
         }
     }
     
     print("异步执行测试\n")
-
 }
 
 
 func useDispatchSourceAdd() {
+    var sum = 0     //手动计数的sum, 来模拟记录merge的数据
     
     let queue = getGlobalQueue()
     
     //创建source
     let dispatchSource:dispatch_source_t = dispatch_source_create(DISPATCH_SOURCE_TYPE_DATA_ADD, 0, 0, queue)
     
-    dispatch_source_set_event_handler(dispatchSource) { 
+    dispatch_source_set_event_handler(dispatchSource) {
         print("source中所有的数相加的和等于\(dispatch_source_get_data(dispatchSource))")
+        print("sum = \(sum)\n")
+        sum = 0
+        currentThreadSleep(0.3)
     }
-    
+
     dispatch_resume(dispatchSource)
     
-    dispatch_async(queue) {
-        var sum = 0
-        for i in 1...100 {
-            dispatch_source_merge_data(dispatchSource, UInt(i))
-            //currentThreadSleep(1)
-            sum += i
-        }
-        print("sum = \(sum)")
-        
+    for i in 1...10 {
+        sum += i
+        dispatch_source_merge_data(dispatchSource, UInt(i))
+        currentThreadSleep(0.1)
     }
 }
 
 func useDispatchSourceOr() {
+    
+    var or = 0     //手动计数的sum, 来记录merge的数据
     
     let queue = getGlobalQueue()
     
@@ -388,21 +388,23 @@ func useDispatchSourceOr() {
     let dispatchSource:dispatch_source_t = dispatch_source_create(DISPATCH_SOURCE_TYPE_DATA_OR, 0, 0, queue)
     
     dispatch_source_set_event_handler(dispatchSource) {
-        print(getCurrentThread())
-        print("source中所有的数进行或操作等于：\(dispatch_source_get_data(dispatchSource))")
+        print("source中所有的数相加的和等于\(dispatch_source_get_data(dispatchSource))")
+        print("or = \(or)\n")
+        or = 0
+        currentThreadSleep(0.3)
+        
     }
     
     dispatch_resume(dispatchSource)
     
-    dispatch_async(queue) {
-        var or = 0
-        for i in 1...100 {
-            dispatch_source_merge_data(dispatchSource, UInt(i))
-            //currentThreadSleep(0.1)
-            or |= i
-        }
-        print("or = \(or)")
+    for i in 1...10 {
+        or |= i
+        dispatch_source_merge_data(dispatchSource, UInt(i))
+        
+        currentThreadSleep(0.1)
+        
     }
+    print("\nsum = \(or)")
 }
 
 func useDispatchSourceTimer() {
@@ -424,12 +426,10 @@ func useDispatchSourceTimer() {
             timeout -= 1
         }
     }
-    
     //倒计时结束的事件
     dispatch_source_set_cancel_handler(source) { 
         print("倒计时结束")
     }
-    
     dispatch_resume(source)
 }
 
