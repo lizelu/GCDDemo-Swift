@@ -267,7 +267,7 @@ func useSemaphoreLock() {
     
     var testNumber = 0
     
-    for index in 1...3 {
+    for index in 1...10 {
         dispatch_async(concurrentQueue, {
             dispatch_semaphore_wait(semaphoreLock, DISPATCH_TIME_FOREVER) //上锁
             
@@ -292,7 +292,7 @@ func useSemaphoreLock() {
  */
 func useDispatchApply() {
     
-    print("循环多次执行串行队列")
+    print("循环多次执行并行队列")
     let concurrentQueue: dispatch_queue_t = getConcurrentQueue("cn.zeluli")
     //会阻塞当前线程, 但concurrentQueue队列会在新的线程中执行
     dispatch_apply(2, concurrentQueue) { (index) in
@@ -338,10 +338,12 @@ func useBarrierAsync() {
         }
     }
     
+    
     dispatch_barrier_async(concurrentQueue) {
 
         print("\n第一批执行完毕后才会执行第二批\n\(getCurrentThread())\n")
     }
+    
     
     for i in 0...3 {
         dispatch_async(concurrentQueue) {
@@ -368,13 +370,14 @@ func useDispatchSourceAdd() {
         print("source中所有的数相加的和等于\(dispatch_source_get_data(dispatchSource))")
         print("sum = \(sum)\n")
         sum = 0
-        currentThreadSleep(0.3)
+       currentThreadSleep(0.3)
     }
 
     dispatch_resume(dispatchSource)
     
     for i in 1...10 {
         sum += i
+        print(i)
         dispatch_source_merge_data(dispatchSource, UInt(i))
         currentThreadSleep(0.1)
     }
@@ -405,6 +408,7 @@ func useDispatchSourceOr() {
     
     for i in 1...10 {
         or |= i
+        print(i)
         dispatch_source_merge_data(dispatchSource, UInt(i))
         
         currentThreadSleep(0.1)
@@ -421,8 +425,8 @@ func useDispatchSourceTimer() {
     let queue: dispatch_queue_t = getGlobalQueue()
     let source: dispatch_source_t = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, queue)
    
-    //设置间隔时间，从当前时间开始，延迟3秒后每个一秒处理一次事件
-    dispatch_source_set_timer(source, DISPATCH_TIME_NOW, UInt64(1 * NSEC_PER_SEC), UInt64(3 * NSEC_PER_SEC))
+    //设置间隔时间，从当前时间开始，允许偏差0纳秒
+    dispatch_source_set_timer(source, DISPATCH_TIME_NOW, UInt64(1 * NSEC_PER_SEC), 0)
     
     var timeout = 10    //倒计时时间
     
