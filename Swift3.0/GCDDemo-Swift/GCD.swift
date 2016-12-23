@@ -43,15 +43,8 @@ func getMainQueue() -> DispatchQueue {
 
 
 /**
- 获取全局队列, 并指定优先级
- 
- - parameter priority: 优先级
- DISPATCH_QUEUE_PRIORITY_HIGH        高
- DISPATCH_QUEUE_PRIORITY_DEFAULT     默认
- DISPATCH_QUEUE_PRIORITY_LOW         低
- DISPATCH_QUEUE_PRIORITY_BACKGROUND  后台
- - returns: 全局队列
- */
+ 获取全局队列
+*/
 
 func getGlobalQueue() -> DispatchQueue {
     return DispatchQueue.global()
@@ -85,7 +78,7 @@ func getSerialQueue(_ label: String) -> DispatchQueue {
 
 
 /**
- 使用队列的同步执行
+队列的同步执行
  
  - parameter queue: 队列
  */
@@ -158,29 +151,6 @@ func deferPerform(_ time: Double) -> Void {
  全局队列的优先级关系
  */
 func globalQueuePriority() {
-    //高 > 默认 > 低 > 后台
-//    let queueHeight: DispatchQueue = getGlobalQueue(DispatchQueue.GlobalQueuePriority.high)
-//    let queueDefault: DispatchQueue = getGlobalQueue(DispatchQueue.GlobalQueuePriority.default)
-//    let queueLow: DispatchQueue = getGlobalQueue(DispatchQueue.GlobalQueuePriority.low)
-//    let queueBackground: DispatchQueue = getGlobalQueue(DispatchQueue.GlobalQueuePriority.background)
-//   
-//    
-//    //优先级不是绝对的，大体上会按这个优先级来执行。 一般都是使用默认（default）优先级
-//    queueLow.async {
-//        print("Low：\(getCurrentThread())")
-//    }
-//    
-//    queueBackground.async {
-//        print("Background：\(getCurrentThread())")
-//    }
-//    
-//    queueDefault.async {
-//        print("Default：\(getCurrentThread())")
-//    }
-//    
-//    queueHeight.async {
-//        print("High：\(getCurrentThread())")
-//    }
 }
 
 /**
@@ -189,20 +159,62 @@ func globalQueuePriority() {
 func setCustomeQueuePriority() {
     //优先级的执行顺序也不是绝对的
     
-    //给serialQueueHigh设定DISPATCH_QUEUE_PRIORITY_HIGH优先级
-    let serialQueueHigh = DispatchQueue(label: "com.appcoda.queue1", qos: DispatchQoS.userInitiated)
+    //Work is virtually instantaneous.:     DispatchQoS.userInteractive
+    //Work is nearly instantaneous, such as a few seconds or less.  DispatchQoS.userInitiated
+    //Work takes a few seconds to a few minutes.    DispatchQoS.utility
+    //Work takes significant time, such as minutes or hours. DispatchQoS.background
     
-    let serialQueueLow = DispatchQueue(label: "com.appcoda.queue2", qos: DispatchQoS.unspecified)
-    
-    serialQueueLow.async {
-        for  _ in 0..<10 {
-            print("低：\(getCurrentThread())")
+    print("userInteractive & userInitiated")
+    let queue1 = DispatchQueue(label:"zeluli.queue1", qos: DispatchQoS.userInteractive)
+    let queue2 = DispatchQueue(label:"zeluli.queue2", qos: DispatchQoS.userInitiated)
+    queue1.async {
+        for i in 100..<110{
+            print("😄", i, getCurrentThread())
         }
     }
     
-    serialQueueHigh.async {
-        for _ in 0..<10 {
-            print("高：\(getCurrentThread())")
+    queue2.async {
+        for i in 200..<210{
+            print("😭", i, getCurrentThread())
+        }
+    }
+    
+    
+    sleep(1)
+    
+    print("\n\n=========第二批==========\n")
+    print("userInitiated & utility")
+    let queue3 = DispatchQueue(label:"zeluli.queue3", qos: DispatchQoS.userInitiated)
+    let queue4 = DispatchQueue(label:"zeluli.queue4", qos: DispatchQoS.utility)
+    
+    queue3.async {
+        for i in 300..<310{
+            print("😄", i, getCurrentThread())
+        }
+    }
+    
+    queue4.async {
+        for i in 400..<410{
+            print("😭", i, getCurrentThread())
+        }
+    }
+    
+    
+    sleep(1)
+    print("\n\n=========第三批==========\n")
+    print("utility & background")
+    let queue5 = DispatchQueue(label:"zeluli.queue5", qos: DispatchQoS.utility)
+    let queue6 = DispatchQueue(label:"zeluli.queue6", qos: DispatchQoS.background)
+    
+    queue5.async {
+        for i in 500..<510{
+            print("😄", i, getCurrentThread())
+        }
+    }
+    
+    queue6.async {
+        for i in 600..<610{
+            print("😭", i, getCurrentThread())
         }
     }
 }
@@ -251,8 +263,7 @@ func performGroupUseEnterAndleave() {
             group.leave()                 //离开队列组
         })
     }
-    
-    group.wait(timeout: DispatchTime.distantFuture)   //阻塞当前线程，直到所有任务执行完毕
+    group.wait()//阻塞当前线程，直到所有任务执行完毕
     print("任务组执行完毕")
     
     group.notify(queue: concurrentQueue) {
@@ -272,7 +283,7 @@ func useSemaphoreLock() {
     
     for index in 1...10 {
         concurrentQueue.async(execute: {
-            semaphoreLock.wait(timeout: DispatchTime.distantFuture) //上锁
+            semaphoreLock.wait()//上锁
             
             testNumber += 1
             currentThreadSleep(Double(1))
@@ -329,7 +340,6 @@ func useBarrierAsync() {
     
     
     concurrentQueue.async(flags: .barrier, execute: {
-
         print("\n第一批执行完毕后才会执行第二批\n\(getCurrentThread())\n")
     }) 
     
@@ -412,7 +422,7 @@ func useDispatchSourceOr() {
  */
 func useDispatchSourceTimer() {
     let queue: DispatchQueue = getGlobalQueue()
-    let source: DispatchSource = DispatchSource.makeTimerSource(flags: DispatchSource.TimerFlags(rawValue: 0), queue: queue) as! DispatchSource
+    let source = DispatchSource.makeTimerSource(flags: DispatchSource.TimerFlags(rawValue: 0), queue: queue)
    
     //设置间隔时间，从当前时间开始，允许偏差0纳秒
     let timer = UInt64(1) * NSEC_PER_SEC
