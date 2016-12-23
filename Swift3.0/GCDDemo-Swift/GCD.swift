@@ -151,6 +151,7 @@ func deferPerform(_ time: Double) -> Void {
  全局队列的优先级关系
  */
 func globalQueuePriority() {
+    
 }
 
 /**
@@ -158,11 +159,17 @@ func globalQueuePriority() {
  */
 func setCustomeQueuePriority() {
     //优先级的执行顺序也不是绝对的
+    // DispatchQoS.userInteractive
+    //Work is virtually instantaneous.
     
-    //Work is virtually instantaneous.:     DispatchQoS.userInteractive
-    //Work is nearly instantaneous, such as a few seconds or less.  DispatchQoS.userInitiated
-    //Work takes a few seconds to a few minutes.    DispatchQoS.utility
-    //Work takes significant time, such as minutes or hours. DispatchQoS.background
+    //DispatchQoS.userInitiated
+    //Work is nearly instantaneous, such as a few seconds or less.
+    
+    //DispatchQoS.utility
+    //Work takes a few seconds to a few minutes.
+    
+    //DispatchQoS.background
+    //Work takes significant time, such as minutes or hours.
     
     print("userInteractive & userInitiated")
     let queue1 = DispatchQueue(label:"zeluli.queue1", qos: DispatchQoS.userInteractive)
@@ -294,7 +301,6 @@ func useSemaphoreLock() {
             
         })
     }
-    
     print("异步执行测试\n")
 }
 
